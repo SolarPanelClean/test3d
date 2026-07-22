@@ -44,7 +44,8 @@ canvas { display:block; position:fixed; top:0; left:0; width:100%; height:100%; 
 /* ── HUD ── */
 #ui { position:fixed; top:calc(10px + env(safe-area-inset-top, 0px)); left:calc(10px + env(safe-area-inset-left, 0px));
   display:flex; justify-content:flex-start; align-items:flex-start;
-  pointer-events:none; z-index:10; gap:8px; flex-wrap:nowrap; }
+  pointer-events:none; z-index:10; gap:8px; flex-wrap:nowrap;
+  transition: opacity 0.18s ease; }
 .box { background:rgba(6,14,32,0.93); border:1px solid rgba(70,170,255,0.3);
   border-radius:8px; padding:5px 8px; backdrop-filter:blur(8px); min-width:60px; }
 .lbl { font-size:8px; letter-spacing:1.5px; color:#5ab4ff; text-transform:uppercase; margin-bottom:1px; }
@@ -838,12 +839,13 @@ let W,H;
 let _skyGradCache = null, _skyGradW = 0, _skyGradH = 0;
 // The #ui HUD (score/water/salt boxes) is a position:fixed overlay drawn
 // ON TOP of the canvas, not laid out above it — it doesn't reserve space,
-// so the canvas draws right underneath it. On phones with the browser
-// address bar showing, the visible height shrinks but the HUD stays a
-// fixed pixel size near the top, so a character anchored high on screen
-// can end up rendering behind/under it. hudBottomLimit tracks the HUD's
-// real bottom edge (+ margin) each time we resize, so draw calls can
-// clamp the character to always render below it.
+// so the canvas draws right underneath it. Because this is a top-down
+// isometric camera, the character legitimately renders near the top of
+// the screen whenever cleaning a back-row panel, so the HUD and the
+// character can genuinely occupy the same screen area sometimes. Rather
+// than move the character (which caused it to snap between positions as
+// it crossed the HUD's horizontal range), hudRect is used to fade the
+// HUD out when the two visually overlap — see __draw3DPlayer() below.
 let hudRect = null;
 function updateHudBottomLimit(){
   const uiEl = document.getElementById('ui');
@@ -7071,24 +7073,32 @@ window.__update3DPlayer = function(dt, state){
   renderer.render(scene3d, camera3d);
 };
 
+// Tracks whether the HUD is currently faded, so we only touch the DOM
+// when the overlap state actually changes (not every single frame).
+let _hudFaded = false;
+
 window.__draw3DPlayer = function(ctx, screenX, screenY, scaleOverride, hudRect){
   if(!ready) return false;
   const s = scaleOverride || CHARACTER_SCALE;
   const drawW = RENDER_W*s, drawH = RENDER_H*s;
-  let topY = screenY - drawH*FOOT_ANCHOR;
-  // Only clamp if the character's sprite actually overlaps the HUD
-  // horizontally too — the HUD sits in the top-left corner, so a
-  // character anywhere else near the top of the screen (e.g. cleaning a
-  // panel toward the back of the field) should be left alone. Without
-  // this check the clamp fired for any character near the top of the
-  // screen regardless of x position, shoving it down into whatever was
-  // drawn behind it.
+  const topY = screenY - drawH*FOOT_ANCHOR;
+  // The game has a top-down isometric camera, so the character legitimately
+  // renders near the top of the screen whenever cleaning a back-row panel —
+  // that's normal, not an edge case. Moving the character to dodge the HUD
+  // caused it to snap between two positions every time it crossed in/out of
+  // the HUD's horizontal range while walking along a back row. Instead, we
+  // leave the character exactly where the game places it and fade the HUD
+  // itself when the two visually overlap, so nothing ever jumps.
+  let overlaps = false;
   if(hudRect){
     const left = screenX - drawW/2, right = screenX + drawW/2;
     const overlapsX = right > hudRect.left && left < hudRect.right;
-    if(overlapsX && topY < hudRect.bottom){
-      topY = hudRect.bottom;
-    }
+    overlaps = overlapsX && topY < hudRect.bottom;
+  }
+  if(overlaps !== _hudFaded){
+    _hudFaded = overlaps;
+    const uiEl = document.getElementById('ui');
+    if(uiEl) uiEl.style.opacity = overlaps ? '0.28' : '1';
   }
   ctx.drawImage(offCanvas, screenX - drawW/2, topY, drawW, drawH);
   return true;
