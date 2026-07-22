@@ -3596,7 +3596,17 @@ function updateHUD(){
   // Salt / auto system — show bar below water bar when auto system purchased
   const spct=Math.round(saltLevel*100);
   const saltBox=el('saltbox');
-  if(saltBox) saltBox.style.display=autoSystemBought?'block':'none';
+  if(saltBox){
+    saltBox.style.display=autoSystemBought?'block':'none';
+    // Toggling this box changes the HUD's real footprint (it's the
+    // rightmost box in the row), but that doesn't fire a resize event —
+    // so the character-vs-HUD overlap clamp would otherwise keep using a
+    // stale, narrower rect measured before the box ever appeared (or
+    // before a saved game that already owns Auto-Clean finishes loading).
+    // updateHUD() only runs on discrete state changes, not every frame,
+    // so re-measuring here is cheap.
+    requestAnimationFrame(updateHudBottomLimit);
+  }
   const sfill=el('sfill');
   if(sfill){
     sfill.style.width=spct+'%';
