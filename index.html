@@ -42,10 +42,9 @@ canvas { display:block; position:fixed; top:0; left:0; width:100%; height:100%; 
 }
 
 /* ── HUD ── */
-#ui { position:fixed; bottom:calc(64px + env(safe-area-inset-bottom, 0px)); left:50%; transform:translateX(-50%);
+#ui { position:fixed; bottom:calc(max(10px, 1.5vh) + env(safe-area-inset-bottom, 0px)); left:50%; transform:translateX(-50%);
   display:flex; justify-content:center; align-items:flex-end;
-  pointer-events:none; z-index:10; gap:8px; flex-wrap:wrap; max-width:min(94vw, 520px);
-  transition: opacity 0.18s ease; }
+  pointer-events:none; z-index:10; gap:8px; flex-wrap:wrap; max-width:min(94vw, 520px); }
 .box { background:rgba(6,14,32,0.93); border:1px solid rgba(70,170,255,0.3);
   border-radius:8px; padding:5px 8px; backdrop-filter:blur(8px); min-width:60px; }
 .lbl { font-size:8px; letter-spacing:1.5px; color:#5ab4ff; text-transform:uppercase; margin-bottom:1px; }
@@ -362,34 +361,34 @@ canvas { display:block; position:fixed; top:0; left:0; width:100%; height:100%; 
 <div id="ui">
 
   <!-- Score -->
-  <div style="background:rgba(6,14,32,0.88);border:1px solid rgba(70,170,255,0.35);border-radius:10px;padding:6px 12px;min-width:100px;flex-shrink:0;">
+  <div style="background:rgba(6,14,32,0.97);border:2px solid rgba(70,170,255,0.6);border-radius:10px;padding:6px 12px;min-width:100px;flex-shrink:0;">
     <div style="font-size:8px;letter-spacing:2px;color:#5ab4ff;text-transform:uppercase;">Score</div>
     <div style="font-size:18px;font-weight:bold;color:#fff;" id="score">0</div>
     <div style="font-size:9px;color:#99bbcc;margin-top:2px;" id="levelsub">Lv1 · 0/25,000</div>
   </div>
 
   <!-- Timer -->
-  <div id="timerbox-mobile" style="background:rgba(6,14,32,0.88);border:1px solid rgba(255,80,50,0.45);border-radius:10px;padding:6px 10px;text-align:center;min-width:52px;flex-shrink:0;">
+  <div id="timerbox-mobile" style="background:rgba(6,14,32,0.97);border:2px solid rgba(255,80,50,0.65);border-radius:10px;padding:6px 10px;text-align:center;min-width:52px;flex-shrink:0;">
     <div style="font-size:8px;letter-spacing:2px;color:#ff7755;text-transform:uppercase;">⏱</div>
     <div style="font-size:16px;font-weight:bold;color:#fff;" id="timerval-mobile">2:00</div>
   </div>
 
   <!-- Water -->
-  <div style="background:rgba(6,14,32,0.88);border:1px solid rgba(70,170,255,0.35);border-radius:10px;padding:6px 10px;text-align:center;flex-shrink:0;">
+  <div style="background:rgba(6,14,32,0.97);border:2px solid rgba(70,170,255,0.6);border-radius:10px;padding:6px 10px;text-align:center;flex-shrink:0;">
     <div style="font-size:8px;letter-spacing:2px;color:#5ab4ff;text-transform:uppercase;">💧 Water</div>
-    <div id="wbar" style="width:70px;height:7px;background:rgba(255,255,255,0.1);border-radius:3px;margin:4px auto 2px;overflow:hidden;">
+    <div id="wbar" style="width:70px;height:7px;background:rgba(255,255,255,0.15);border-radius:3px;margin:4px auto 2px;overflow:hidden;">
       <div id="wfill" style="height:100%;width:100%;background:linear-gradient(90deg,#2299ff,#44ddff);border-radius:3px;transition:width .12s;"></div>
     </div>
-    <div style="font-size:9px;color:#44ddff;" id="wpct">100%</div>
+    <div style="font-size:9px;color:#44ddff;font-weight:bold;" id="wpct">100%</div>
   </div>
 
   <!-- Salt — same 8px gap, shown when Auto-Clean purchased -->
-  <div id="saltbox" style="display:none;background:rgba(6,14,32,0.88);border:1px solid rgba(200,220,255,0.35);border-radius:10px;padding:6px 10px;text-align:center;flex-shrink:0;z-index:10;">
+  <div id="saltbox" style="display:none;background:rgba(6,14,32,0.97);border:2px solid rgba(200,220,255,0.6);border-radius:10px;padding:6px 10px;text-align:center;flex-shrink:0;z-index:10;">
     <div style="font-size:8px;letter-spacing:2px;color:#aabbdd;text-transform:uppercase;">🧂 Salt</div>
-    <div id="sbar" style="width:70px;height:7px;background:rgba(255,255,255,0.1);border-radius:3px;margin:4px auto 2px;overflow:hidden;">
+    <div id="sbar" style="width:70px;height:7px;background:rgba(255,255,255,0.15);border-radius:3px;margin:4px auto 2px;overflow:hidden;">
       <div id="sfill" style="height:100%;width:100%;background:linear-gradient(90deg,#aaccff,#ddeeff);border-radius:3px;transition:width .12s;"></div>
     </div>
-    <div style="font-size:9px;color:#ccddf0;" id="spct">100%</div>
+    <div style="font-size:9px;color:#ccddf0;font-weight:bold;" id="spct">100%</div>
   </div>
 
   <!-- Hidden elements kept for JS compatibility -->
@@ -837,23 +836,6 @@ const ctx=cv.getContext('2d');
 let W,H;
 // Sky gradient cache — declared here so resize() can invalidate it
 let _skyGradCache = null, _skyGradW = 0, _skyGradH = 0;
-// The #ui HUD (score/water/salt boxes) is a position:fixed overlay drawn
-// ON TOP of the canvas, not laid out above it — it doesn't reserve space,
-// so the canvas draws right underneath it. Because this is a top-down
-// isometric camera, the character legitimately renders near the top of
-// the screen whenever cleaning a back-row panel, so the HUD and the
-// character can genuinely occupy the same screen area sometimes. Rather
-// than move the character (which caused it to snap between positions as
-// it crossed the HUD's horizontal range), hudRect is used to fade the
-// HUD out when the two visually overlap — see __draw3DPlayer() below.
-let hudRect = null;
-function updateHudBottomLimit(){
-  const uiEl = document.getElementById('ui');
-  if(uiEl){
-    const r = uiEl.getBoundingClientRect();
-    hudRect = r.bottom > 0 ? {left:r.left-10, right:r.right+10, bottom:r.bottom+10} : null;
-  }
-}
 function resize(){
   // Cap DPR at 2 — phones at DPR 3 render 9× the pixels for minimal visual gain
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -872,10 +854,6 @@ function resize(){
   cv.style.height = H + 'px';
   ctx.scale(dpr, dpr);
   _skyGradCache = null; // force gradient rebuild at new size
-  // Defer to the next frame: right after a resize/orientation event the
-  // #ui boxes may not have reflowed to their final position yet, so
-  // measuring immediately can read a stale rect.
-  requestAnimationFrame(updateHudBottomLimit);
 }
 resize();
 window.addEventListener('resize', resize);
@@ -3598,17 +3576,7 @@ function updateHUD(){
   // Salt / auto system — show bar below water bar when auto system purchased
   const spct=Math.round(saltLevel*100);
   const saltBox=el('saltbox');
-  if(saltBox){
-    saltBox.style.display=autoSystemBought?'block':'none';
-    // Toggling this box changes the HUD's real footprint (it's the
-    // rightmost box in the row), but that doesn't fire a resize event —
-    // so the character-vs-HUD overlap clamp would otherwise keep using a
-    // stale, narrower rect measured before the box ever appeared (or
-    // before a saved game that already owns Auto-Clean finishes loading).
-    // updateHUD() only runs on discrete state changes, not every frame,
-    // so re-measuring here is cheap.
-    requestAnimationFrame(updateHudBottomLimit);
-  }
+  if(saltBox) saltBox.style.display=autoSystemBought?'block':'none';
   const sfill=el('sfill');
   if(sfill){
     sfill.style.width=spct+'%';
@@ -5534,7 +5502,7 @@ function drawSpeechBubble(){
 function drawPlayerAuto(){
   if(window.__player3DReady && window.__draw3DPlayer){
     const sc=iso(player.gx,player.gy,player.gz);
-    const drawn=window.__draw3DPlayer(ctx, sc.x, sc.y, undefined, hudRect);
+    const drawn=window.__draw3DPlayer(ctx, sc.x, sc.y);
     if(!drawn) drawPlayer();
   } else {
     drawPlayer();
@@ -7073,33 +7041,11 @@ window.__update3DPlayer = function(dt, state){
   renderer.render(scene3d, camera3d);
 };
 
-// Tracks whether the HUD is currently faded, so we only touch the DOM
-// when the overlap state actually changes (not every single frame).
-let _hudFaded = false;
-
-window.__draw3DPlayer = function(ctx, screenX, screenY, scaleOverride, hudRect){
+window.__draw3DPlayer = function(ctx, screenX, screenY, scaleOverride){
   if(!ready) return false;
   const s = scaleOverride || CHARACTER_SCALE;
   const drawW = RENDER_W*s, drawH = RENDER_H*s;
   const topY = screenY - drawH*FOOT_ANCHOR;
-  // The game has a top-down isometric camera, so the character legitimately
-  // renders near the top of the screen whenever cleaning a back-row panel —
-  // that's normal, not an edge case. Moving the character to dodge the HUD
-  // caused it to snap between two positions every time it crossed in/out of
-  // the HUD's horizontal range while walking along a back row. Instead, we
-  // leave the character exactly where the game places it and fade the HUD
-  // itself when the two visually overlap, so nothing ever jumps.
-  let overlaps = false;
-  if(hudRect){
-    const left = screenX - drawW/2, right = screenX + drawW/2;
-    const overlapsX = right > hudRect.left && left < hudRect.right;
-    overlaps = overlapsX && topY < hudRect.bottom;
-  }
-  if(overlaps !== _hudFaded){
-    _hudFaded = overlaps;
-    const uiEl = document.getElementById('ui');
-    if(uiEl) uiEl.style.opacity = overlaps ? '0.28' : '1';
-  }
   ctx.drawImage(offCanvas, screenX - drawW/2, topY, drawW, drawH);
   return true;
 };
