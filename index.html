@@ -844,12 +844,12 @@ let _skyGradCache = null, _skyGradW = 0, _skyGradH = 0;
 // can end up rendering behind/under it. hudBottomLimit tracks the HUD's
 // real bottom edge (+ margin) each time we resize, so draw calls can
 // clamp the character to always render below it.
-let hudBottomLimit = 0;
+let hudRect = null;
 function updateHudBottomLimit(){
   const uiEl = document.getElementById('ui');
   if(uiEl){
     const r = uiEl.getBoundingClientRect();
-    hudBottomLimit = r.bottom > 0 ? r.bottom + 10 : 0;
+    hudRect = r.bottom > 0 ? {left:r.left-10, right:r.right+10, bottom:r.bottom+10} : null;
   }
 }
 function resize(){
@@ -5522,7 +5522,7 @@ function drawSpeechBubble(){
 function drawPlayerAuto(){
   if(window.__player3DReady && window.__draw3DPlayer){
     const sc=iso(player.gx,player.gy,player.gz);
-    const drawn=window.__draw3DPlayer(ctx, sc.x, sc.y, undefined, hudBottomLimit);
+    const drawn=window.__draw3DPlayer(ctx, sc.x, sc.y, undefined, hudRect);
     if(!drawn) drawPlayer();
   } else {
     drawPlayer();
@@ -7061,17 +7061,24 @@ window.__update3DPlayer = function(dt, state){
   renderer.render(scene3d, camera3d);
 };
 
-window.__draw3DPlayer = function(ctx, screenX, screenY, scaleOverride, minTopY){
+window.__draw3DPlayer = function(ctx, screenX, screenY, scaleOverride, hudRect){
   if(!ready) return false;
   const s = scaleOverride || CHARACTER_SCALE;
   const drawW = RENDER_W*s, drawH = RENDER_H*s;
   let topY = screenY - drawH*FOOT_ANCHOR;
-  // If the character's top edge would land above the HUD's bottom edge
-  // (e.g. because the browser address bar shrank the visible viewport),
-  // push the whole sprite down just enough to clear it. Only ever moves
-  // the character DOWN, never up, so normal positioning is untouched.
-  if(minTopY && topY < minTopY){
-    topY = minTopY;
+  // Only clamp if the character's sprite actually overlaps the HUD
+  // horizontally too — the HUD sits in the top-left corner, so a
+  // character anywhere else near the top of the screen (e.g. cleaning a
+  // panel toward the back of the field) should be left alone. Without
+  // this check the clamp fired for any character near the top of the
+  // screen regardless of x position, shoving it down into whatever was
+  // drawn behind it.
+  if(hudRect){
+    const left = screenX - drawW/2, right = screenX + drawW/2;
+    const overlapsX = right > hudRect.left && left < hudRect.right;
+    if(overlapsX && topY < hudRect.bottom){
+      topY = hudRect.bottom;
+    }
   }
   ctx.drawImage(offCanvas, screenX - drawW/2, topY, drawW, drawH);
   return true;
