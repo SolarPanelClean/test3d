@@ -836,6 +836,22 @@ const ctx=cv.getContext('2d');
 let W,H;
 // Sky gradient cache — declared here so resize() can invalidate it
 let _skyGradCache = null, _skyGradW = 0, _skyGradH = 0;
+// The #ui HUD (score/water/salt boxes) is a position:fixed overlay drawn
+// ON TOP of the canvas, not laid out above it — it doesn't reserve space,
+// so the canvas draws right underneath it. On phones with the browser
+// address bar showing, the visible height shrinks but the HUD stays a
+// fixed pixel size near the top, so a character anchored high on screen
+// can end up rendering behind/under it. hudBottomLimit tracks the HUD's
+// real bottom edge (+ margin) each time we resize, so draw calls can
+// clamp the character to always render below it.
+let hudBottomLimit = 0;
+function updateHudBottomLimit(){
+  const uiEl = document.getElementById('ui');
+  if(uiEl){
+    const r = uiEl.getBoundingClientRect();
+    hudBottomLimit = r.bottom > 0 ? r.bottom + 10 : 0;
+  }
+}
 function resize(){
   // Cap DPR at 2 — phones at DPR 3 render 9× the pixels for minimal visual gain
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -854,6 +870,10 @@ function resize(){
   cv.style.height = H + 'px';
   ctx.scale(dpr, dpr);
   _skyGradCache = null; // force gradient rebuild at new size
+  // Defer to the next frame: right after a resize/orientation event the
+  // #ui boxes may not have reflowed to their final position yet, so
+  // measuring immediately can read a stale rect.
+  requestAnimationFrame(updateHudBottomLimit);
 }
 resize();
 window.addEventListener('resize', resize);
@@ -5502,7 +5522,7 @@ function drawSpeechBubble(){
 function drawPlayerAuto(){
   if(window.__player3DReady && window.__draw3DPlayer){
     const sc=iso(player.gx,player.gy,player.gz);
-    const drawn=window.__draw3DPlayer(ctx, sc.x, sc.y);
+    const drawn=window.__draw3DPlayer(ctx, sc.x, sc.y, undefined, hudBottomLimit);
     if(!drawn) drawPlayer();
   } else {
     drawPlayer();
@@ -7041,11 +7061,19 @@ window.__update3DPlayer = function(dt, state){
   renderer.render(scene3d, camera3d);
 };
 
-window.__draw3DPlayer = function(ctx, screenX, screenY, scaleOverride){
+window.__draw3DPlayer = function(ctx, screenX, screenY, scaleOverride, minTopY){
   if(!ready) return false;
   const s = scaleOverride || CHARACTER_SCALE;
   const drawW = RENDER_W*s, drawH = RENDER_H*s;
-  ctx.drawImage(offCanvas, screenX - drawW/2, screenY - drawH*FOOT_ANCHOR, drawW, drawH);
+  let topY = screenY - drawH*FOOT_ANCHOR;
+  // If the character's top edge would land above the HUD's bottom edge
+  // (e.g. because the browser address bar shrank the visible viewport),
+  // push the whole sprite down just enough to clear it. Only ever moves
+  // the character DOWN, never up, so normal positioning is untouched.
+  if(minTopY && topY < minTopY){
+    topY = minTopY;
+  }
+  ctx.drawImage(offCanvas, screenX - drawW/2, topY, drawW, drawH);
   return true;
 };
 </script>
