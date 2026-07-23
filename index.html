@@ -836,22 +836,27 @@ const cv=document.getElementById('c');
 const ctx=cv.getContext('2d');
 let W,H;
 // ── Ground hero texture ──────────────────────────────────────────
-// A full-frame grass photo (already opaque edge-to-edge, no background
-// to remove), stretched via an affine transform to cover the ENTIRE
-// ground area — same x:-18..18 / y:-18..24 extent the procedural grass
-// grid covers. Resized/compressed to JPEG since the source was a 10MB+
-// PNG; full photo resolution isn't visible once warped across the whole
-// ground anyway. Procedural grass only ever shows before this loads.
+// A full-frame photo per stage (already opaque edge-to-edge, no
+// background to remove), stretched via an affine transform to cover the
+// ENTIRE ground area — same x:-18..18 / y:-18..24 extent the procedural
+// ground grid covers for both stages. Procedural ground only ever shows
+// before the relevant image finishes loading.
 const groundHeroImg = new Image();
 let groundHeroReady = false;
 groundHeroImg.onload = () => { groundHeroReady = true; };
 groundHeroImg.onerror = () => { groundHeroReady = false; };
 groundHeroImg.src = './ground_hero.jpg';
+
+const rooftopHeroImg = new Image();
+let rooftopHeroReady = false;
+rooftopHeroImg.onload = () => { rooftopHeroReady = true; };
+rooftopHeroImg.onerror = () => { rooftopHeroReady = false; };
+rooftopHeroImg.src = './rooftop_hero.jpg';
+
 const GROUND_HERO_SPAN_X = 36, GROUND_HERO_SPAN_Y = 42; // grid units — matches drawGround()'s full x:-18..18, y:-18..24 extent
 const GROUND_HERO_CX = 0, GROUND_HERO_CY = 3; // grid-space center (midpoint of that same extent)
-function drawGroundHero(){
-  if(selectedStage!=='grass' || !groundHeroReady) return;
-  const iw = groundHeroImg.naturalWidth, ih = groundHeroImg.naturalHeight;
+function _drawStretchedHero(img){
+  const iw = img.naturalWidth, ih = img.naturalHeight;
   if(!iw || !ih) return;
   const a = iso(GROUND_HERO_CX - GROUND_HERO_SPAN_X/2, GROUND_HERO_CY - GROUND_HERO_SPAN_Y/2, 0);
   const b = iso(GROUND_HERO_CX + GROUND_HERO_SPAN_X/2, GROUND_HERO_CY - GROUND_HERO_SPAN_Y/2, 0);
@@ -865,8 +870,12 @@ function drawGroundHero(){
     (d.x-a.x)/ih, (d.y-a.y)/ih,
     a.x, a.y
   );
-  ctx.drawImage(groundHeroImg, 0, 0);
+  ctx.drawImage(img, 0, 0);
   ctx.restore();
+}
+function drawGroundHero(){
+  if(selectedStage==='grass' && groundHeroReady) _drawStretchedHero(groundHeroImg);
+  else if(selectedStage==='rooftop' && rooftopHeroReady) _drawStretchedHero(rooftopHeroImg);
 }
 // Sky gradient cache — declared here so resize() can invalidate it
 let _skyGradCache = null, _skyGradW = 0, _skyGradH = 0;
