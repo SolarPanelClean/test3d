@@ -463,6 +463,39 @@ canvas { display:block; position:fixed; top:0; left:0; width:100%; height:100%; 
   </div>
 </div>
 
+<!-- App Exit confirm (front page) — custom modal instead of window.confirm(),
+     since many WebViews (including Kodular's by default) render native JS
+     confirm() dialogs blank/broken or don't wire up the return value. -->
+<div id="appExitConfirm" style="
+  position:fixed;inset:0;background:rgba(3,7,20,0.92);
+  display:none;flex-direction:column;align-items:center;justify-content:center;
+  z-index:120;gap:16px;backdrop-filter:blur(6px);">
+  <div style="background:linear-gradient(135deg,#2a0845,#5b2a86,#1a0530);
+    border:3px solid transparent;border-radius:20px;padding:32px 28px;
+    display:flex;flex-direction:column;align-items:center;gap:18px;max-width:320px;
+    box-shadow:0 0 0 2px rgba(255,209,102,0.6),0 0 40px rgba(255,107,107,0.45);">
+    <div style="font-size:44px;">👋</div>
+    <h2 style="font-size:19px;letter-spacing:0.5px;line-height:1.4;
+      background:linear-gradient(90deg,#ffd166,#ff6b6b,#4ecdc4);
+      -webkit-background-clip:text;background-clip:text;color:transparent;
+      text-align:center;margin:0;font-weight:900;">
+      Do you really want<br/>to leave the game?
+    </h2>
+    <div style="display:flex;gap:12px;margin-top:4px;">
+      <button type="button" onclick="confirmAppExit()" style="padding:12px 22px;font-size:14px;
+        font-weight:bold;letter-spacing:1px;border-radius:10px;border:none;cursor:pointer;
+        font-family:inherit;background:linear-gradient(135deg,#ff6b6b,#ee0979);color:#fff;
+        box-shadow:0 4px 14px rgba(238,9,121,0.45);
+        -webkit-tap-highlight-color:transparent;touch-action:manipulation;">✕ Yes, Exit</button>
+      <button type="button" onclick="cancelAppExit()" style="padding:12px 22px;font-size:14px;
+        font-weight:bold;letter-spacing:1px;border-radius:10px;border:none;cursor:pointer;
+        font-family:inherit;background:linear-gradient(135deg,#4ecdc4,#556270);color:#fff;
+        box-shadow:0 4px 14px rgba(78,205,196,0.4);
+        -webkit-tap-highlight-color:transparent;touch-action:manipulation;">↩ No, Stay</button>
+    </div>
+  </div>
+</div>
+
 <div id="pauseScreen">
   <h2>⏸ Paused</h2>
   <p>Press the <b>Continue</b> button to resume</p>
@@ -990,10 +1023,19 @@ function notifyNativeBridge(signal){
 // native side is responsible for actually terminating the app via a
 // "Close Application" block. In a normal browser (no native shell) this
 // is a harmless no-op via notifyNativeBridge's own try/catch.
+// Uses a custom modal rather than window.confirm() — many WebViews
+// (Kodular's included, without extra native wiring) render JS confirm()
+// dialogs as a blank window and don't reliably report back which button
+// was tapped, which is exactly the "yes does nothing" bug this replaces.
 function exitApp(){
-  if(window.confirm('Exit SolarClean?')){
-    notifyNativeBridge('EXIT_APP');
-  }
+  document.getElementById('appExitConfirm').style.display='flex';
+}
+function confirmAppExit(){
+  document.getElementById('appExitConfirm').style.display='none';
+  notifyNativeBridge('EXIT_APP');
+}
+function cancelAppExit(){
+  document.getElementById('appExitConfirm').style.display='none';
 }
 let gameRunning=false,paused=false;
 let birdTimer=7,leafTimer=28,powerTimer=20;
@@ -3965,7 +4007,20 @@ function fullRestart(){
     <button class="btn" type="button"
       onclick="startGame()"
       style="-webkit-tap-highlight-color:transparent;touch-action:manipulation;-webkit-appearance:none;">▶ Start Cleaning</button>
-      <button type="button" data-action="tutorial" style="margin-top:6px;padding:10px 28px;font-size:13px;letter-spacing:2px;text-transform:uppercase;background:rgba(20,20,60,0.85);border:1px solid rgba(68,170,255,0.6);border-radius:8px;color:#aabbcc;cursor:pointer;font-family:inherit;">📖 Tutorial</button>
+      <div style="display:flex;gap:10px;margin-top:6px;justify-content:center;flex-wrap:wrap;">
+        <button type="button" data-action="tutorial" style="padding:10px 22px;font-size:13px;letter-spacing:2px;text-transform:uppercase;background:rgba(20,20,60,0.85);border:1px solid rgba(68,170,255,0.6);border-radius:8px;color:#44ddff;cursor:pointer;font-family:inherit;">📖 Tutorial</button>
+        <button type="button" onclick="openSettings()" style="padding:10px 22px;font-size:13px;letter-spacing:2px;text-transform:uppercase;background:rgba(20,20,60,0.85);border:1px solid rgba(68,170,255,0.6);border-radius:8px;color:#44ddff;cursor:pointer;font-family:inherit;">⚙️ Settings</button>
+      </div>
+      <div style="display:flex;justify-content:center;margin-top:10px;">
+        <button type="button" onclick="exitApp()"
+          style="padding:10px 22px;font-size:13px;letter-spacing:2px;
+          text-transform:uppercase;background:rgba(60,10,10,0.85);
+          border:1px solid rgba(255,80,60,0.6);border-radius:8px;
+          color:#ff7766;cursor:pointer;font-family:inherit;
+          -webkit-tap-highlight-color:transparent;touch-action:manipulation;">
+          ✕ Exit
+        </button>
+      </div>
     
       <!-- Daily goal question -->
       <div style=\"font-size:13px;color:#44ddff;letter-spacing:0.5px;font-family:Arial,sans-serif;text-align:center;margin-bottom:4px;\">
