@@ -836,18 +836,17 @@ const cv=document.getElementById('c');
 const ctx=cv.getContext('2d');
 let W,H;
 // ── Ground hero texture ──────────────────────────────────────────
-// A photo-based grass field (background already made transparent),
-// stretched via an affine transform to cover the ENTIRE ground area —
-// same x:-18..18 / y:-18..24 extent the procedural grass grid covers —
-// so it's the primary ground visual everywhere the camera can pan, not
-// just a centered patch. The procedural grass still renders underneath
-// as a fallback (visible only before the image loads, or through any
-// remaining transparent pixels at the image's own edges).
+// A full-frame grass photo (already opaque edge-to-edge, no background
+// to remove), stretched via an affine transform to cover the ENTIRE
+// ground area — same x:-18..18 / y:-18..24 extent the procedural grass
+// grid covers. Resized/compressed to JPEG since the source was a 10MB+
+// PNG; full photo resolution isn't visible once warped across the whole
+// ground anyway. Procedural grass only ever shows before this loads.
 const groundHeroImg = new Image();
 let groundHeroReady = false;
 groundHeroImg.onload = () => { groundHeroReady = true; };
 groundHeroImg.onerror = () => { groundHeroReady = false; };
-groundHeroImg.src = './ground_hero.png';
+groundHeroImg.src = './ground_hero.jpg';
 const GROUND_HERO_SPAN_X = 36, GROUND_HERO_SPAN_Y = 42; // grid units — matches drawGround()'s full x:-18..18, y:-18..24 extent
 const GROUND_HERO_CX = 0, GROUND_HERO_CY = 3; // grid-space center (midpoint of that same extent)
 function drawGroundHero(){
