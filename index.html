@@ -835,6 +835,41 @@ function selectStage(s){
 const cv=document.getElementById('c');
 const ctx=cv.getContext('2d');
 let W,H;
+// ── Ground hero texture ──────────────────────────────────────────
+// A single photo-based grass patch (background already made transparent,
+// cropped tight to its diamond silhouette) drawn once over the procedural
+// grass, warped via an affine transform to align with the isometric grid.
+// It's centered on the play area (block layout is centered near grid
+// origin) at a generous span so it comfortably covers the panels/player
+// regardless of level; the plain procedural grass still fills everywhere
+// else (camera-pan padding far outside the play area), so panning to the
+// map edges never reveals a missing texture.
+const groundHeroImg = new Image();
+let groundHeroReady = false;
+groundHeroImg.onload = () => { groundHeroReady = true; };
+groundHeroImg.onerror = () => { groundHeroReady = false; };
+groundHeroImg.src = './ground_hero.png';
+const GROUND_HERO_SPAN_X = 34, GROUND_HERO_SPAN_Y = 23; // grid units
+const GROUND_HERO_CX = 0, GROUND_HERO_CY = 3; // grid-space center
+function drawGroundHero(){
+  if(selectedStage!=='grass' || !groundHeroReady) return;
+  const iw = groundHeroImg.naturalWidth, ih = groundHeroImg.naturalHeight;
+  if(!iw || !ih) return;
+  const a = iso(GROUND_HERO_CX - GROUND_HERO_SPAN_X/2, GROUND_HERO_CY - GROUND_HERO_SPAN_Y/2, 0);
+  const b = iso(GROUND_HERO_CX + GROUND_HERO_SPAN_X/2, GROUND_HERO_CY - GROUND_HERO_SPAN_Y/2, 0);
+  const d = iso(GROUND_HERO_CX - GROUND_HERO_SPAN_X/2, GROUND_HERO_CY + GROUND_HERO_SPAN_Y/2, 0);
+  ctx.save();
+  // ctx.transform() COMPOSES with the existing dpr scale set in resize()
+  // — using setTransform() here would wipe that out and break high-DPI
+  // rendering, so this must stay transform(), not setTransform().
+  ctx.transform(
+    (b.x-a.x)/iw, (b.y-a.y)/iw,
+    (d.x-a.x)/ih, (d.y-a.y)/ih,
+    a.x, a.y
+  );
+  ctx.drawImage(groundHeroImg, 0, 0);
+  ctx.restore();
+}
 // Sky gradient cache — declared here so resize() can invalidate it
 let _skyGradCache = null, _skyGradW = 0, _skyGradH = 0;
 // The #ui HUD sits fixed at the top-left. hudRect tracks its real
@@ -5810,7 +5845,7 @@ function loop(now){
 
   // ── Draw ───────────────────────────────────────────────────
   _hudOverlapFrame = false;
-  drawSky();drawGround();drawPuddles();renderScene();drawBirds();drawDustStorm();drawRainCloud();drawParticles();drawSpeechBubble();
+  drawSky();drawGround();drawGroundHero();drawPuddles();renderScene();drawBirds();drawDustStorm();drawRainCloud();drawParticles();drawSpeechBubble();
   applyHudFade();
 
   if(tdist<2.5){
