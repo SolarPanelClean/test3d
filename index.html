@@ -6193,8 +6193,9 @@ window.addEventListener('load', function() {
 // tap on WebViews that don't honor preventDefault consistently.
 var _lastActionAt = {};
 function _runUIAction(action){
+  _showDebugBadge(action);
   var now = Date.now();
-  if(_lastActionAt[action] && now - _lastActionAt[action] < 400) return; // debounce duplicate fire
+  if(_lastActionAt[action] && now - _lastActionAt[action] < 400) { _showDebugBadge(action+' (debounced)'); return; }
   _lastActionAt[action] = now;
   switch(action){
     case 'tutorial': openTutorial(); break;
@@ -6203,6 +6204,24 @@ function _runUIAction(action){
     case 'confirm-app-exit': confirmAppExit(); break;
     case 'cancel-app-exit': cancelAppExit(); break;
   }
+}
+// Temporary on-screen debug badge — shows exactly which data-action was
+// recognized on each tap. Console logs aren't practical to check when
+// testing on a real device through Kodular, so this makes the same
+// information visible directly on screen for a screenshot.
+var _dbgBadge = null;
+function _showDebugBadge(text){
+  if(!_dbgBadge){
+    _dbgBadge = document.createElement('div');
+    _dbgBadge.style.cssText = 'position:fixed;top:2px;left:2px;z-index:99999;'+
+      'background:rgba(255,0,150,0.95);color:#fff;font:11px monospace;'+
+      'padding:3px 7px;border-radius:5px;pointer-events:none;max-width:90vw;'+
+      'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;';
+    document.body.appendChild(_dbgBadge);
+  }
+  var t = new Date();
+  var stamp = t.getMinutes()+':'+String(t.getSeconds()).padStart(2,'0');
+  _dbgBadge.textContent = 'tap→'+text+' @'+stamp;
 }
 function _findActionEl(ev){
   var t = ev.target;
@@ -6213,10 +6232,12 @@ function _findActionEl(ev){
 document.addEventListener('click', function(ev){
   var el = _findActionEl(ev);
   if(el){ ev.preventDefault(); _runUIAction(el.getAttribute('data-action')); }
+  else { _showDebugBadge('click-miss:'+(ev.target.tagName||'?')+'#'+(ev.target.id||'-')); }
 });
 document.addEventListener('touchend', function(ev){
   var el = _findActionEl(ev);
   if(el){ ev.preventDefault(); _runUIAction(el.getAttribute('data-action')); }
+  else { _showDebugBadge('touch-miss:'+(ev.target.tagName||'?')+'#'+(ev.target.id||'-')); }
 },{passive:false});
 </script>
 
