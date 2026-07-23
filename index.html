@@ -4105,7 +4105,28 @@ function drawGround(){
           even?'#2a2a30':'#252528',
           even?'#333338':'#2e2e33');
       }
-    // Rooftop details: ventilation units, edge parapet
+  } else {
+    // Grass field — flat light-green base tone (tufts/rocks/soil border
+    // moved to drawGroundProps(), drawn after the hero texture on top)
+    for(let x=-ext;x<ext;x++)
+      for(let y=-ext;y<ext+6;y++){
+        isoBox(x,y,0,1,1,.055,(x+y)%2===0?GRASS_A:GRASS_B,GRASS_E,GRASS_E);
+      }
+  }
+}
+
+// Props that have real height/volume (parapet walls, AC vent units, grass
+// tufts, rocks, soil border) — split out from drawGround() and drawn
+// AFTER drawGroundHero() so the opaque stretched photo texture (which
+// paints over everything drawn before it, since this is a 2D painter's-
+// algorithm canvas with no z-buffer) doesn't hide them. This also means
+// the AC vent units here are the real fix for "AC unit not proportional
+// to the water tank" — they're isoBox 3D props in the same grid-unit
+// scale as drawTank(), so they're inherently proportional to it, unlike
+// anything baked into the flat photo texture.
+function drawGroundProps(){
+  const ext=18;
+  if(selectedStage==='rooftop'){
     // Edge parapet (low wall around perimeter)
     for(let x=-ext;x<ext;x++){
       isoBox(x,-ext,0,1,1,.18,'#555560','#3a3a44','#454550');
@@ -4121,11 +4142,9 @@ function drawGround(){
       isoBox(vx+.1,vy+.1,.55,.7,.7,.12,'#4a4a55','#333338','#3a3a44');
     }
   } else {
-    // Grass field — flat light-green tone + scattered tufts/pebbles
     const tufts=[], rocks=[];
     for(let x=-ext;x<ext;x++)
       for(let y=-ext;y<ext+6;y++){
-        isoBox(x,y,0,1,1,.055,(x+y)%2===0?GRASS_A:GRASS_B,GRASS_E,GRASS_E);
         const tuftN = grassPatchNoise(x*2.3+100, y*3.1+50);
         if(tuftN>0.94) tufts.push([x,y,x*12.9+y*7.3]);
         const rockN = grassPatchNoise(x*3.7-60, y*1.9+200);
@@ -5854,7 +5873,7 @@ function loop(now){
 
   // ── Draw ───────────────────────────────────────────────────
   _hudOverlapFrame = false;
-  drawSky();drawGround();drawGroundHero();drawPuddles();renderScene();drawBirds();drawDustStorm();drawRainCloud();drawParticles();drawSpeechBubble();
+  drawSky();drawGround();drawGroundHero();drawGroundProps();drawPuddles();renderScene();drawBirds();drawDustStorm();drawRainCloud();drawParticles();drawSpeechBubble();
   applyHudFade();
 
   if(tdist<2.5){
