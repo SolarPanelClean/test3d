@@ -548,6 +548,16 @@ canvas { display:block; position:fixed; top:0; left:0; width:100%; height:100%; 
       ⚙️ Settings
     </button>
   </div>
+  <div style="display:flex;justify-content:center;margin-top:10px;">
+    <button type="button" onclick="exitApp()"
+      style="padding:10px 22px;font-size:13px;letter-spacing:2px;
+      text-transform:uppercase;background:rgba(60,10,10,0.85);
+      border:1px solid rgba(255,80,60,0.6);border-radius:8px;
+      color:#ff7766;cursor:pointer;font-family:inherit;
+      -webkit-tap-highlight-color:transparent;touch-action:manipulation;">
+      ✕ Exit
+    </button>
+  </div>
 </div>
 
 
@@ -971,6 +981,18 @@ function notifyNativeBridge(signal){
     }
   }catch(e){
     console.warn('[Bridge] notifyNativeBridge failed:', e);
+  }
+}
+// Front-page Exit button — actually closes the app (unlike the in-game
+// Exit button, which just resets back to this front page). There's no
+// way for a webpage to force-close its own wrapping app, so this sends
+// a signal to Kodular over the same bridge used for ad triggers; the
+// native side is responsible for actually terminating the app via a
+// "Close Application" block. In a normal browser (no native shell) this
+// is a harmless no-op via notifyNativeBridge's own try/catch.
+function exitApp(){
+  if(window.confirm('Exit SolarClean?')){
+    notifyNativeBridge('EXIT_APP');
   }
 }
 let gameRunning=false,paused=false;
@@ -2390,13 +2412,13 @@ function openBank(){
   if(bigMopBought){
     shopHTML+=`<div class="retro-item" style="display:flex;align-items:center;gap:12px;margin-bottom:10px;padding:10px;border-color:#00ff88;">
       <div style="font-size:28px">🧹</div>
-      <div style="flex:1"><div class="retro-item-name" style="color:#44ffbb;text-shadow:0 2px 0 #008844">Pro Big Mop</div><div class="retro-installed">✓ INSTALLED — 2× faster · +5% score</div></div>
+      <div style="flex:1"><div class="retro-item-name" style="color:#44ffbb;text-shadow:0 2px 0 #008844">Professional Mop</div><div class="retro-installed">✓ INSTALLED — 2× faster · +5% score</div></div>
     </div>`;
   } else if(currentLevel>=2){
     const canBuy=bankTotal>=BIG_MOP_COST;
     shopHTML+=`<div class="retro-item" style="display:flex;align-items:center;gap:12px;margin-bottom:10px;padding:10px;border-color:#ffaa44;">
       <div style="font-size:28px">🧹</div>
-      <div style="flex:1"><div class="retro-item-name" style="color:#ffee55;text-shadow:0 2px 0 #cc6600">Pro Big Mop</div>
+      <div style="flex:1"><div class="retro-item-name" style="color:#ffee55;text-shadow:0 2px 0 #cc6600">Professional Mop</div>
         <div style="color:#88aacc;font-size:11px">Upgrade mop! 2× faster. Wider head + <b style="color:#ffcc44">+5% score bonus</b>, per clean.</div>
         <div style="color:#ffaa44;font-size:11px;margin-top:3px">Cost: ${BIG_MOP_COST.toLocaleString()} pts (one time)</div></div>
       <button onclick="buyBigMop()" ${canBuy?'':'disabled'}
@@ -2405,7 +2427,7 @@ function openBank(){
     </div>`;
   } else {
     shopHTML+=`<div style="padding:12px 16px;background:rgba(20,40,60,0.6);border:2px dashed rgba(80,120,160,0.5);border-radius:14px;margin-bottom:10px;font-family:'Nunito',sans-serif;font-size:14px;font-weight:800;color:#6699bb">
-      🔒 Pro Big Mop — unlocks Level 2</div>`;
+      🔒 Professional Mop — unlocks Level 2</div>`;
   }
 
   shopHTML+=`</div><div style="border-top:1px solid rgba(255,215,0,0.2);padding-top:16px;margin-bottom:16px">
