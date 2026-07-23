@@ -829,6 +829,7 @@ function buildBoardHTML(scores, myScore, isGlobal) {
 }
 
 function startGame(){
+  console.log('[UI] Start Cleaning tapped → startGame()');
   _unlockSpeech();
   if(_pendingRefill){ const _pr=_pendingRefill; _pendingRefill=null; setTimeout(()=>speakRefill(_pr),200); }
   // Unlock AudioContext on first interaction (iOS requirement)
@@ -1028,13 +1029,16 @@ function notifyNativeBridge(signal){
 // dialogs as a blank window and don't reliably report back which button
 // was tapped, which is exactly the "yes does nothing" bug this replaces.
 function exitApp(){
+  console.log('[UI] Exit tapped → exitApp()');
   document.getElementById('appExitConfirm').style.display='flex';
 }
 function confirmAppExit(){
+  console.log('[UI] Yes, Exit tapped → confirmAppExit()');
   document.getElementById('appExitConfirm').style.display='none';
   notifyNativeBridge('EXIT_APP');
 }
 function cancelAppExit(){
+  console.log('[UI] No, Stay tapped → cancelAppExit()');
   document.getElementById('appExitConfirm').style.display='none';
 }
 let gameRunning=false,paused=false;
