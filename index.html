@@ -463,41 +463,6 @@ canvas { display:block; position:fixed; top:0; left:0; width:100%; height:100%; 
   </div>
 </div>
 
-<!-- App Exit confirm (front page) — custom modal instead of window.confirm(),
-     since many WebViews (including Kodular's by default) render native JS
-     confirm() dialogs blank/broken or don't wire up the return value. -->
-<div id="appExitConfirm" style="
-  position:fixed;inset:0;background:rgba(3,7,20,0.92);
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  z-index:120;gap:16px;backdrop-filter:blur(6px);
-  opacity:0;visibility:hidden;pointer-events:none;
-  transition:opacity 0.15s ease;">
-  <div style="background:linear-gradient(135deg,#2a0845,#5b2a86,#1a0530);
-    border:3px solid transparent;border-radius:20px;padding:32px 28px;
-    display:flex;flex-direction:column;align-items:center;gap:18px;max-width:320px;
-    box-shadow:0 0 0 2px rgba(255,209,102,0.6),0 0 40px rgba(255,107,107,0.45);">
-    <div style="font-size:44px;">👋</div>
-    <h2 style="font-size:19px;letter-spacing:0.5px;line-height:1.4;
-      background:linear-gradient(90deg,#ffd166,#ff6b6b,#4ecdc4);
-      -webkit-background-clip:text;background-clip:text;color:transparent;
-      text-align:center;margin:0;font-weight:900;">
-      Do you really want<br/>to leave the game?
-    </h2>
-    <div style="display:flex;gap:12px;margin-top:4px;">
-      <button type="button" data-action="confirm-app-exit" style="padding:12px 22px;font-size:14px;
-        font-weight:bold;letter-spacing:1px;border-radius:10px;border:none;cursor:pointer;
-        font-family:inherit;background:linear-gradient(135deg,#ff6b6b,#ee0979);color:#fff;
-        box-shadow:0 4px 14px rgba(238,9,121,0.45);
-        -webkit-tap-highlight-color:transparent;touch-action:manipulation;">✕ Yes, Exit</button>
-      <button type="button" data-action="cancel-app-exit" style="padding:12px 22px;font-size:14px;
-        font-weight:bold;letter-spacing:1px;border-radius:10px;border:none;cursor:pointer;
-        font-family:inherit;background:linear-gradient(135deg,#4ecdc4,#556270);color:#fff;
-        box-shadow:0 4px 14px rgba(78,205,196,0.4);
-        -webkit-tap-highlight-color:transparent;touch-action:manipulation;">↩ No, Stay</button>
-    </div>
-  </div>
-</div>
-
 <div id="pauseScreen">
   <h2>⏸ Paused</h2>
   <p>Press the <b>Continue</b> button to resume</p>
@@ -581,16 +546,6 @@ canvas { display:block; position:fixed; top:0; left:0; width:100%; height:100%; 
       color:#44ddff;cursor:pointer;font-family:inherit;
       -webkit-tap-highlight-color:transparent;touch-action:manipulation;">
       ⚙️ Settings
-    </button>
-  </div>
-  <div style="display:flex;justify-content:center;margin-top:10px;">
-    <button type="button" data-action="exit-app"
-      style="padding:10px 22px;font-size:13px;letter-spacing:2px;
-      text-transform:uppercase;background:rgba(60,10,10,0.85);
-      border:1px solid rgba(255,80,60,0.6);border-radius:8px;
-      color:#ff7766;cursor:pointer;font-family:inherit;
-      -webkit-tap-highlight-color:transparent;touch-action:manipulation;">
-      ✕ Exit
     </button>
   </div>
 </div>
@@ -831,7 +786,6 @@ function buildBoardHTML(scores, myScore, isGlobal) {
 }
 
 function startGame(){
-  console.log('[UI] Start Cleaning tapped → startGame()');
   _unlockSpeech();
   if(_pendingRefill){ const _pr=_pendingRefill; _pendingRefill=null; setTimeout(()=>speakRefill(_pr),200); }
   // Unlock AudioContext on first interaction (iOS requirement)
@@ -1018,34 +972,6 @@ function notifyNativeBridge(signal){
   }catch(e){
     console.warn('[Bridge] notifyNativeBridge failed:', e);
   }
-}
-// Front-page Exit button — actually closes the app (unlike the in-game
-// Exit button, which just resets back to this front page). There's no
-// way for a webpage to force-close its own wrapping app, so this sends
-// a signal to Kodular over the same bridge used for ad triggers; the
-// native side is responsible for actually terminating the app via a
-// "Close Application" block. In a normal browser (no native shell) this
-// is a harmless no-op via notifyNativeBridge's own try/catch.
-// Uses a custom modal rather than window.confirm() — many WebViews
-// (Kodular's included, without extra native wiring) render JS confirm()
-// dialogs as a blank window and don't reliably report back which button
-// was tapped, which is exactly the "yes does nothing" bug this replaces.
-function exitApp(){
-  console.log('[UI] Exit tapped → exitApp()');
-  var m=document.getElementById('appExitConfirm');
-  m.style.opacity='1'; m.style.visibility='visible'; m.style.pointerEvents='auto';
-  void m.offsetHeight; // force an immediate reflow/paint on WebViews that otherwise lag
-}
-function confirmAppExit(){
-  console.log('[UI] Yes, Exit tapped → confirmAppExit()');
-  var m=document.getElementById('appExitConfirm');
-  m.style.opacity='0'; m.style.visibility='hidden'; m.style.pointerEvents='none';
-  notifyNativeBridge('EXIT_APP');
-}
-function cancelAppExit(){
-  console.log('[UI] No, Stay tapped → cancelAppExit()');
-  var m=document.getElementById('appExitConfirm');
-  m.style.opacity='0'; m.style.visibility='hidden'; m.style.pointerEvents='none';
 }
 let gameRunning=false,paused=false;
 let birdTimer=7,leafTimer=28,powerTimer=20;
@@ -4021,16 +3947,6 @@ function fullRestart(){
         <button type="button" data-action="tutorial" style="padding:10px 22px;font-size:13px;letter-spacing:2px;text-transform:uppercase;background:rgba(20,20,60,0.85);border:1px solid rgba(68,170,255,0.6);border-radius:8px;color:#44ddff;cursor:pointer;font-family:inherit;">📖 Tutorial</button>
         <button type="button" onclick="openSettings()" style="padding:10px 22px;font-size:13px;letter-spacing:2px;text-transform:uppercase;background:rgba(20,20,60,0.85);border:1px solid rgba(68,170,255,0.6);border-radius:8px;color:#44ddff;cursor:pointer;font-family:inherit;">⚙️ Settings</button>
       </div>
-      <div style="display:flex;justify-content:center;margin-top:10px;">
-        <button type="button" data-action="exit-app"
-          style="padding:10px 22px;font-size:13px;letter-spacing:2px;
-          text-transform:uppercase;background:rgba(60,10,10,0.85);
-          border:1px solid rgba(255,80,60,0.6);border-radius:8px;
-          color:#ff7766;cursor:pointer;font-family:inherit;
-          -webkit-tap-highlight-color:transparent;touch-action:manipulation;">
-          ✕ Exit
-        </button>
-      </div>
     
       <!-- Daily goal question -->
       <div style=\"font-size:13px;color:#44ddff;letter-spacing:0.5px;font-family:Arial,sans-serif;text-align:center;margin-bottom:4px;\">
@@ -6186,48 +6102,25 @@ window.addEventListener('load', function() {
 </script>
 
 <script>
-// Event delegation for dynamically-created tutorial button
 // Generic data-action delegation (extended from the original
 // tutorial-only version). Using delegated touchend+click instead of
 // inline onclick avoids a known WebView quirk: a real touchend can be
 // followed ~300ms later by a synthetic "ghost" click at the same screen
 // coordinates, which can land on whatever now sits there if the DOM
-// changed in between (e.g. a modal opening/closing). touchend calls
-// preventDefault() to suppress that trailing click on touch devices;
-// the click listener remains as the path for non-touch input (desktop
-// mouse). _lastActionAt guards against both still firing for the same
-// tap on WebViews that don't honor preventDefault consistently.
+// changed in between. touchend calls preventDefault() to suppress that
+// trailing click on touch devices; the click listener remains as the
+// path for non-touch input (desktop mouse). _lastActionAt guards
+// against both still firing for the same tap on WebViews that don't
+// honor preventDefault consistently.
 var _lastActionAt = {};
 function _runUIAction(action){
-  _showDebugBadge(action);
   var now = Date.now();
-  if(_lastActionAt[action] && now - _lastActionAt[action] < 400) { _showDebugBadge(action+' (debounced)'); return; }
+  if(_lastActionAt[action] && now - _lastActionAt[action] < 400) return; // debounce duplicate fire
   _lastActionAt[action] = now;
   switch(action){
     case 'tutorial': openTutorial(); break;
     case 'start-game': startGame(); break;
-    case 'exit-app': exitApp(); break;
-    case 'confirm-app-exit': confirmAppExit(); break;
-    case 'cancel-app-exit': cancelAppExit(); break;
   }
-}
-// Temporary on-screen debug badge — shows exactly which data-action was
-// recognized on each tap. Console logs aren't practical to check when
-// testing on a real device through Kodular, so this makes the same
-// information visible directly on screen for a screenshot.
-var _dbgBadge = null;
-function _showDebugBadge(text){
-  if(!_dbgBadge){
-    _dbgBadge = document.createElement('div');
-    _dbgBadge.style.cssText = 'position:fixed;top:2px;left:2px;z-index:99999;'+
-      'background:rgba(255,0,150,0.95);color:#fff;font:11px monospace;'+
-      'padding:3px 7px;border-radius:5px;pointer-events:none;max-width:90vw;'+
-      'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;';
-    document.body.appendChild(_dbgBadge);
-  }
-  var t = new Date();
-  var stamp = t.getMinutes()+':'+String(t.getSeconds()).padStart(2,'0');
-  _dbgBadge.textContent = 'tap→'+text+' @'+stamp;
 }
 function _findActionEl(ev){
   var t = ev.target;
@@ -6238,12 +6131,10 @@ function _findActionEl(ev){
 document.addEventListener('click', function(ev){
   var el = _findActionEl(ev);
   if(el){ ev.preventDefault(); _runUIAction(el.getAttribute('data-action')); }
-  else { _showDebugBadge('click-miss:'+(ev.target.tagName||'?')+'#'+(ev.target.id||'-')); }
 });
 document.addEventListener('touchend', function(ev){
   var el = _findActionEl(ev);
   if(el){ ev.preventDefault(); _runUIAction(el.getAttribute('data-action')); }
-  else { _showDebugBadge('touch-miss:'+(ev.target.tagName||'?')+'#'+(ev.target.id||'-')); }
 },{passive:false});
 </script>
 
