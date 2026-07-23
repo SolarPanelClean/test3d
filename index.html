@@ -468,8 +468,10 @@ canvas { display:block; position:fixed; top:0; left:0; width:100%; height:100%; 
      confirm() dialogs blank/broken or don't wire up the return value. -->
 <div id="appExitConfirm" style="
   position:fixed;inset:0;background:rgba(3,7,20,0.92);
-  display:none;flex-direction:column;align-items:center;justify-content:center;
-  z-index:120;gap:16px;backdrop-filter:blur(6px);">
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  z-index:120;gap:16px;backdrop-filter:blur(6px);
+  opacity:0;visibility:hidden;pointer-events:none;
+  transition:opacity 0.15s ease;">
   <div style="background:linear-gradient(135deg,#2a0845,#5b2a86,#1a0530);
     border:3px solid transparent;border-radius:20px;padding:32px 28px;
     display:flex;flex-direction:column;align-items:center;gap:18px;max-width:320px;
@@ -1030,16 +1032,20 @@ function notifyNativeBridge(signal){
 // was tapped, which is exactly the "yes does nothing" bug this replaces.
 function exitApp(){
   console.log('[UI] Exit tapped → exitApp()');
-  document.getElementById('appExitConfirm').style.display='flex';
+  var m=document.getElementById('appExitConfirm');
+  m.style.opacity='1'; m.style.visibility='visible'; m.style.pointerEvents='auto';
+  void m.offsetHeight; // force an immediate reflow/paint on WebViews that otherwise lag
 }
 function confirmAppExit(){
   console.log('[UI] Yes, Exit tapped → confirmAppExit()');
-  document.getElementById('appExitConfirm').style.display='none';
+  var m=document.getElementById('appExitConfirm');
+  m.style.opacity='0'; m.style.visibility='hidden'; m.style.pointerEvents='none';
   notifyNativeBridge('EXIT_APP');
 }
 function cancelAppExit(){
   console.log('[UI] No, Stay tapped → cancelAppExit()');
-  document.getElementById('appExitConfirm').style.display='none';
+  var m=document.getElementById('appExitConfirm');
+  m.style.opacity='0'; m.style.visibility='hidden'; m.style.pointerEvents='none';
 }
 let gameRunning=false,paused=false;
 let birdTimer=7,leafTimer=28,powerTimer=20;
